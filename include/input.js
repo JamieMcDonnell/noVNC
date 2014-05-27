@@ -202,6 +202,8 @@ function resetDoubleClickTimer() {
     doubleClickTimer = null;
 }
 
+var numFingersDown = 0;
+
 function onMouseButton(e, down) {
     var evt, pos, bmask;
     if (! conf.focused) {
@@ -217,6 +219,11 @@ function onMouseButton(e, down) {
 
     if (e.touches || e.changedTouches) {
         // Touch device
+        
+        numFingersDown += 1;
+		if(numFingersDown == 2){
+			console.log("do 2 finger scroll");
+		}
 
         // When two touches occur within 500 ms of each other and are
         // closer than 20 pixels together a double click is triggered.
@@ -241,7 +248,9 @@ function onMouseButton(e, down) {
                 }
             }
             doubleClickTimer = setTimeout(resetDoubleClickTimer, 500);
-        }
+        }else{
+			numFingersDown = 0;
+		}
         bmask = conf.touchButton;
         // If bmask is set
     } else if (evt.which) {
@@ -304,6 +313,9 @@ function onMouseWheel(e) {
     return false;
 }
 
+var oldXPos = 0;
+var oldYPos = 0;
+
 function onMouseMove(e) {
     var evt, pos;
     if (! conf.focused) {
@@ -317,7 +329,23 @@ function onMouseMove(e) {
     pos = Util.getEventPosition(e, conf.target, conf.scale);
     //Util.Debug('mouse ' + evt.which + '/' + evt.button + ' up:' + pos.x + "," + pos.y);
     if (conf.onMouseMove) {
-        conf.onMouseMove(pos.x, pos.y);
+        if(numFingersDown == 2){
+			var mw = jQuery.Event("DOMMouseScroll");
+			if(pos.y > oldYPos){
+				mw.wheelDelta = 10;
+			}else{
+				mw.wheelDelta = -10;
+			}
+			mw.pageX = pos.x;
+			mw.pageY = pos.y;
+			
+			console.log("two finger swipe event: ", mw);
+			
+			onMouseWheel(mw);
+			oldYPos = pos.y;
+		}else{
+			conf.onMouseMove(pos.x, pos.y);
+		}
     }
     Util.stopEvent(e);
     return false;
